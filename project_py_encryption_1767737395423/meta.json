@@ -1,0 +1,12 @@
+{
+  "lang": "py",
+  "type": "encryption",
+  "id": 1767737395423,
+  "modules": [
+    "cipher",
+    "hash",
+    "keygen",
+    "entropy",
+    "secure"
+  ]
+}
