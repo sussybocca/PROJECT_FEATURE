@@ -1,0 +1,12 @@
+{
+  "lang": "java",
+  "type": "network",
+  "id": 1767734192130,
+  "modules": [
+    "socket",
+    "protocol",
+    "packet",
+    "transport",
+    "router"
+  ]
+}
