@@ -1,0 +1,13 @@
+{
+  "lang": "py",
+  "type": "game",
+  "id": 1767785227306,
+  "modules": [
+    "engine",
+    "world",
+    "entity",
+    "input",
+    "render",
+    "physics"
+  ]
+}
