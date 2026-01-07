@@ -1,0 +1,12 @@
+{
+  "lang": "js",
+  "type": "compiler",
+  "id": 1767772317815,
+  "modules": [
+    "lexer",
+    "parser",
+    "ast",
+    "optimizer",
+    "emitter"
+  ]
+}
