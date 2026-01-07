@@ -2,7 +2,7 @@ name: Auto Generate Repo
 
 on:
   schedule:
-    - cron: '* * * * *'  # every minute
+    - cron:  '* * * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,90 +20,99 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Realistic Project Generator
+      - name: Build Hardcore Procedural Project Generator
         run: |
           mkdir -p engine
           cat > engine/generator.js << 'EOF'
-          const fs = require('fs');
+          const fs = require("fs");
 
           const languages = {
-            js: { ext: 'js', main: 'index.js' },
-            py: { ext: 'py', main: 'main.py' }
+            js: { ext: "js", main: "index.js" },
+            py: { ext: "py", main: "main.py" }
           };
 
-          const projectTemplates = {
-            calculator: {
-              js: `
-function add(a, b) { return a + b; }
-function sub(a, b) { return a - b; }
-function mul(a, b) { return a * b; }
-function div(a, b) { return a / b; }
-
-console.log("Add:", add(5,3));
-console.log("Sub:", sub(5,3));
-console.log("Mul:", mul(5,3));
-console.log("Div:", div(5,3));
-`,
-              py: `
-def add(a,b): return a+b
-def sub(a,b): return a-b
-def mul(a,b): return a*b
-def div(a,b): return a/b
-
-print("Add:", add(5,3))
-print("Sub:", sub(5,3))
-print("Mul:", mul(5,3))
-print("Div:", div(5,3))
-`
-            },
-            greeter: {
-              js: `
-function greet(name) { console.log("Hello, "+name+"!"); }
-greet("World");
-`,
-              py: `
-def greet(name): print(f"Hello, {name}!")
-greet("World")
-`
-            },
-            todo: {
-              js: `
-let todos = [];
-function addTodo(task) { todos.push(task); }
-function listTodos() { console.log(todos); }
-
-addTodo("Buy milk");
-addTodo("Walk dog");
-listTodos();
-`,
-              py: `
-todos = []
-def add_todo(task): todos.append(task)
-def list_todos(): print(todos)
-
-add_todo("Buy milk")
-add_todo("Walk dog")
-list_todos()
-`
-            }
+          const projectTypes = {
+            server: ["network","router","request","response","session","handler"],
+            game: ["engine","world","entity","input","render","physics"],
+            compiler: ["lexer","parser","ast","optimizer","emitter"]
           };
 
-          function pick(obj) {
-            const keys = Object.keys(obj);
-            return keys[Math.floor(Math.random()*keys.length)];
-          }
+          function pick(o){ return Object.keys(o)[Math.floor(Math.random()*Object.keys(o).length)]; }
+          function rand(n){ return Math.floor(Math.random()*n); }
 
           const lang = pick(languages);
-          const template = pick(projectTemplates);
-          const code = projectTemplates[template][lang];
+          const type = pick(projectTypes);
           const id = Date.now();
-          const root = `project_${lang}_${template}_${id}`;
+          const root = `project_${lang}_${type}_${id}`;
+          fs.mkdirSync(`${root}/src`, { recursive: true });
+          fs.mkdirSync(`${root}/lib`, { recursive: true });
+          const L = languages[lang];
+          const modules = projectTypes[type];
 
-          fs.mkdirSync(root, { recursive: true });
-          fs.writeFileSync(`${root}/${languages[lang].main}`, code);
-          fs.writeFileSync(`${root}/README.md`, `# Auto Generated Project\n\nLanguage: ${lang}\nTemplate: ${template}\nID: ${id}\n`);
+          // Generate modules with interconnected logic
+          modules.forEach(m => {
+            const file = `${root}/src/${m}.${L.ext}`;
+            let code = "";
+            if(lang === "js"){
+              code += `// Module ${m}\n`;
+              code += `function ${m}_init(){ console.log("Initializing ${m}"); }\n`;
+              for(let i=0;i<500;i++){
+                // functions call each other randomly to simulate software behavior
+                const target = modules[rand(modules.length)];
+                code += `function ${m}_func_${i}(x){ let y = x + ${rand(1000)}; y += ${target}_helper(${rand(50)}); return y; }\n`;
+              }
+              // Add helper functions
+              modules.forEach(mod=>{
+                code += `function ${mod}_helper(x){ return x*${rand(20)+1}; }\n`;
+              });
+              code += `module.exports = { ${modules.map(mod=>mod+"_init").join(", ")} };\n`;
+            } else if(lang === "py"){
+              code += `# Module ${m}\n`;
+              code += `def ${m}_init():\n    print("Initializing ${m}")\n\n`;
+              for(let i=0;i<500;i++){
+                const target = modules[rand(modules.length)];
+                code += `def ${m}_func_${i}(x):\n    y = x + ${rand(1000)}\n    y += ${target}_helper(${rand(50)})\n    return y\n\n`;
+              }
+              // helper functions
+              modules.forEach(mod=>{
+                code += `def ${mod}_helper(x):\n    return x*${rand(20)+1}\n\n`;
+              });
+            }
+            fs.writeFileSync(file, code);
+          });
 
-          console.log(`Generated project at ${root}`);
+          // Create main file
+          let entry = "";
+          if(lang === "js"){
+            modules.forEach(m => entry += `const ${m} = require("./${m}.js");\n`);
+            entry += `console.log("Project ${type} running");\n`;
+            modules.forEach(m => entry += `${m}.${m}_init();\n`);
+            entry += `let data = [1,2,3,4,5];\n`;
+            for(let i=0;i<100;i++){
+              modules.forEach(m=>{
+                entry += `data = data.map(x=>${m}_func_${rand(500)}(x));\n`;
+              });
+            }
+            entry += `console.log("Final data:", data);\n`;
+          } else if(lang === "py"){
+            modules.forEach(m => entry += `import ${m}\n`);
+            entry += `print("Project ${type} running")\n`;
+            modules.forEach(m => entry += `${m}.${m}_init()\n`);
+            entry += `data=[1,2,3,4,5]\n`;
+            for(let i=0;i<100;i++){
+              modules.forEach(m=>{
+                entry += `data=[${m}.${m}_func_${rand(500)}(x) for x in data]\n`;
+              });
+            }
+            entry += `print("Final data:", data)\n`;
+          }
+          fs.writeFileSync(`${root}/src/${L.main}`, entry);
+
+          // Meta & README
+          fs.writeFileSync(`${root}/meta.json`, JSON.stringify({lang,type,id,modules}, null, 2));
+          fs.writeFileSync(`${root}/README.md`,
+            `# Hardcore Auto Generated Project\n\nLanguage: ${lang}\nType: ${type}\nModules: ${modules.join(", ")}\nID: ${id}\n`
+          );
           EOF
 
       - name: Generate New Project
@@ -114,7 +123,7 @@ list_todos()
           git config --global user.name "auto-bot"
           git config --global user.email "bot@example.com"
           git add .
-          git commit -m "Auto-generated real project $(date)" || echo "No changes"
+          git commit -m "Auto-generated hardcore project $(date)" || echo "No changes"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
