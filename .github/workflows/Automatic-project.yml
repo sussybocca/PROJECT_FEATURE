@@ -2,7 +2,7 @@ name: Auto Generate Repo
 
 on:
   schedule:
-    - cron: '0 * * * *'  # every hour
+    - cron: '* * * * *'
   workflow_dispatch:
 
 jobs:
@@ -20,71 +20,104 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Install dependencies
-        run: npm install node-fetch@3
-
-      - name: Generate Project with AI
+      - name: Build Realistic Project Generator
         run: |
           mkdir -p engine
-          cat > engine/generate.js << 'EOF'
-          import fs from 'fs';
-          import fetch from 'node-fetch';
+          cat > engine/generator.js << 'EOF'
+const fs = require('fs');
 
-          const languages = ['javascript','python','ruby','go','java','c','cpp','csharp','php','rust','swift'];
+const languages = {
+  js: { ext: 'js', main: 'index.js' },
+  py: { ext: 'py', main: 'main.py' }
+};
 
-          function pick(arr){ return arr[Math.floor(Math.random()*arr.length)]; }
+const projectTemplates = {
+  calculator: {
+    js: `
+function add(a, b) { return a + b; }
+function sub(a, b) { return a - b; }
+function mul(a, b) { return a * b; }
+function div(a, b) { return a / b; }
 
-          const lang = pick(languages);
-          const id = Date.now();
-          const projectName = `project_${lang}_${id}`;
-          fs.mkdirSync(projectName, { recursive: true });
+console.log("Add:", add(5,3));
+console.log("Sub:", sub(5,3));
+console.log("Mul:", mul(5,3));
+console.log("Div:", div(5,3));
+`,
+    py: `
+def add(a,b): return a+b
+def sub(a,b): return a-b
+def mul(a,b): return a*b
+def div(a,b): return a/b
 
-          // AI Prompt
-          const prompt = `
-Generate a complete ${lang} project with a main file. 
-It should be runnable, unique, and self-contained. 
-Include comments explaining the code.
-`;
+print("Add:", add(5,3))
+print("Sub:", sub(5,3))
+print("Mul:", mul(5,3))
+print("Div:", div(5,3))
+`
+  },
+  greeter: {
+    js: `
+function greet(name) { console.log("Hello, "+name+"!"); }
+greet("World");
+`,
+    py: `
+def greet(name): print(f"Hello, {name}!")
+greet("World")
+`
+  },
+  todo: {
+    js: `
+let todos = [];
+function addTodo(task) { todos.push(task); }
+function listTodos() { console.log(todos); }
 
-          const apiKey = process.env.AI_API_KEY;
+addTodo("Buy milk");
+addTodo("Walk dog");
+listTodos();
+`,
+    py: `
+todos = []
+def add_todo(task): todos.append(task)
+def list_todos(): print(todos)
 
-          const response = await fetch("https://api.openai.com/v1/completions", {
-            method: "POST",
-            headers: {
-              "Content-Type": "application/json",
-              "Authorization": `Bearer ${apiKey}`
-            },
-            body: JSON.stringify({
-              model: "text-davinci-003",
-              prompt: prompt,
-              max_tokens: 2000
-            })
-          });
+add_todo("Buy milk")
+add_todo("Walk dog")
+list_todos()
+`
+  }
+};
 
-          const data = await response.json();
-          const code = data.choices[0].text.trim();
+function pick(obj) {
+  const keys = Object.keys(obj);
+  return keys[Math.floor(Math.random() * keys.length)];
+}
 
-          const mainFile = lang === 'javascript' ? 'index.js' :
-                           lang === 'python' ? 'main.py' :
-                           'main.txt';
+const lang = pick(languages);
+const template = pick(projectTemplates);
+const code = projectTemplates[template][lang];
+const id = Date.now();
+const root = `project_${lang}_${template}_${id}`;
 
-          fs.writeFileSync(`${projectName}/${mainFile}`, code);
-          fs.writeFileSync(`${projectName}/README.md`, `# Auto Generated Project\nLanguage: ${lang}\nID: ${id}`);
+fs.mkdirSync(root, { recursive: true });
+fs.writeFileSync(`${root}/${languages[lang].main}`, code);
+fs.writeFileSync(
+  `${root}/README.md`,
+  `# Auto Generated Project\n\nLanguage: ${lang}\nTemplate: ${template}\nID: ${id}\n`
+);
 
-          console.log(`Generated project: ${projectName}`);
-          EOF
+console.log(`Generated project at ${root}`);
+EOF
 
-      - name: Run Generator
-        run: node engine/generate.js
-        env:
-          AI_API_KEY: ${{ secrets.AI_API_KEY }}
+      - name: Generate New Project
+        run: node engine/generator.js
 
       - name: Commit & Push
         run: |
           git config --global user.name "auto-bot"
           git config --global user.email "bot@example.com"
           git add .
-          git commit -m "Auto-generated AI project $(date)" || echo "No changes"
+          git commit -m "Auto-generated real project $(date)" || echo "No changes"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
