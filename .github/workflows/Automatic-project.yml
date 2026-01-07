@@ -2,7 +2,7 @@ name: Auto Generate Repo
 
 on:
   schedule:
-    - cron: '* * * * *'
+    - cron: '* * * * *'  # every minute
   workflow_dispatch:
 
 jobs:
@@ -20,26 +20,20 @@ jobs:
         with:
           python-version: '3.11'
 
-      - name: Build Universal Project Generator
+      - name: Build Realistic Project Generator
         run: |
           mkdir -p engine
-          cat > engine/generator.js <<'EOF'
-const fs = require('fs');
-const { execSync } = require('child_process');
+          cat > engine/generator.js << 'EOF'
+          const fs = require('fs');
 
-// Supported languages
-const languages = {
-  js: { ext: 'js', main: 'index.js', packages: ['express', 'lodash', 'axios'] },
-  py: { ext: 'py', main: 'main.py', packages: ['requests', 'numpy', 'pandas'] }
-};
+          const languages = {
+            js: { ext: 'js', main: 'index.js' },
+            py: { ext: 'py', main: 'main.py' }
+          };
 
-// Project templates
-const projectTemplates = {
-  calculator: {
-    js: `const _ = require('lodash');
-const axios = require('axios');
-const express = require('express');
-
+          const projectTemplates = {
+            calculator: {
+              js: `
 function add(a, b) { return a + b; }
 function sub(a, b) { return a - b; }
 function mul(a, b) { return a * b; }
@@ -50,10 +44,7 @@ console.log("Sub:", sub(5,3));
 console.log("Mul:", mul(5,3));
 console.log("Div:", div(5,3));
 `,
-    py: `import requests
-import numpy as np
-import pandas as pd
-
+              py: `
 def add(a,b): return a+b
 def sub(a,b): return a-b
 def mul(a,b): return a*b
@@ -64,10 +55,20 @@ print("Sub:", sub(5,3))
 print("Mul:", mul(5,3))
 print("Div:", div(5,3))
 `
-  },
-  todo: {
-    js: `const _ = require('lodash');
-const todos = [];
+            },
+            greeter: {
+              js: `
+function greet(name) { console.log("Hello, "+name+"!"); }
+greet("World");
+`,
+              py: `
+def greet(name): print(f"Hello, {name}!")
+greet("World")
+`
+            },
+            todo: {
+              js: `
+let todos = [];
 function addTodo(task) { todos.push(task); }
 function listTodos() { console.log(todos); }
 
@@ -75,7 +76,8 @@ addTodo("Buy milk");
 addTodo("Walk dog");
 listTodos();
 `,
-    py: `todos = []
+              py: `
+todos = []
 def add_todo(task): todos.append(task)
 def list_todos(): print(todos)
 
@@ -83,37 +85,26 @@ add_todo("Buy milk")
 add_todo("Walk dog")
 list_todos()
 `
-  }
-};
+            }
+          };
 
-// Pick random element
-function pick(obj) {
-  const keys = Object.keys(obj);
-  return keys[Math.floor(Math.random() * keys.length)];
-}
+          function pick(obj) {
+            const keys = Object.keys(obj);
+            return keys[Math.floor(Math.random()*keys.length)];
+          }
 
-// Select language & template
-const lang = pick(languages);
-const template = pick(projectTemplates);
-const code = projectTemplates[template][lang];
-const id = Date.now();
-const root = `project_\${lang}_\${template}_\${id}`;
+          const lang = pick(languages);
+          const template = pick(projectTemplates);
+          const code = projectTemplates[template][lang];
+          const id = Date.now();
+          const root = `project_${lang}_${template}_${id}`;
 
-// Create project folder
-fs.mkdirSync(root, { recursive: true });
-fs.writeFileSync(`${root}/${languages[lang].main}`, code);
-fs.writeFileSync(`${root}/README.md`,
-  `# Auto Generated Project\n\nLanguage: ${lang}\nTemplate: ${template}\nID: ${id}\n`
-);
+          fs.mkdirSync(root, { recursive: true });
+          fs.writeFileSync(`${root}/${languages[lang].main}`, code);
+          fs.writeFileSync(`${root}/README.md`, `# Auto Generated Project\n\nLanguage: ${lang}\nTemplate: ${template}\nID: ${id}\n`);
 
-// Install Node.js packages if JS
-if(lang === 'js'){
-  execSync('npm init -y', { cwd: root, stdio: 'inherit' });
-  execSync(`npm install ${languages[lang].packages.join(' ')}`, { cwd: root, stdio: 'inherit' });
-}
-
-console.log(`Generated project at ${root}`);
-EOF
+          console.log(`Generated project at ${root}`);
+          EOF
 
       - name: Generate New Project
         run: node engine/generator.js
@@ -123,7 +114,7 @@ EOF
           git config --global user.name "auto-bot"
           git config --global user.email "bot@example.com"
           git add .
-          git commit -m "Auto-generated universal project $(date)" || echo "No changes"
+          git commit -m "Auto-generated real project $(date)" || echo "No changes"
           git push
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
