@@ -1,0 +1,12 @@
+{
+  "lang": "py",
+  "type": "compiler",
+  "id": 1767884152316,
+  "modules": [
+    "lexer",
+    "parser",
+    "ast",
+    "optimizer",
+    "emitter"
+  ]
+}
