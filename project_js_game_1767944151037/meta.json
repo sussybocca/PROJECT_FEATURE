@@ -1,0 +1,13 @@
+{
+  "lang": "js",
+  "type": "game",
+  "id": 1767944151037,
+  "modules": [
+    "engine",
+    "world",
+    "entity",
+    "input",
+    "render",
+    "physics"
+  ]
+}
